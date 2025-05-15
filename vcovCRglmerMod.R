@@ -57,7 +57,8 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
 # extract information from obj
 #################
   n = nobs(obj)
-  m = length(unique(cluster))
+  clusternames = unique(cluster)
+  m = length(clusternames)
 #
   X = model.matrix(obj,type="fixed")
   beta=matrix(fixef(obj),ncol=1)
@@ -86,7 +87,7 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
   XtVX = vcov(obj)
   WB_C1 = solve(XtVX)
   sum=matrix(0,np,np)
-  for (g in 1:m){
+  for (g in clusternames){
     grp = (cluster == g & nden>0)
     ng = sum(grp)
     if (link == "identity") {
@@ -94,12 +95,12 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
       deltainv = delta 
     } else if (link == "logit") {
       term = ginv_eta[grp]*(1-ginv_eta[grp])
-      delta = diag(term)
-      deltainv = diag(1/term)
+      delta = diag(term,ng,ng)
+      deltainv = diag(1/term,ng,ng)
     } else if (link == "log") {
       term = ginv_eta[grp]
-      delta = diag(term)
-      deltainv = diag(1/term)
+      delta = diag(term,ng,ng)
+      deltainv = diag(1/term,ng,ng)
     } else {
       stop("Link ",link," not supported")
     }
@@ -118,8 +119,8 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
       WB_A <- diag(1/diag(mtx_AD(mtx_DA(deltainv,Sigma),deltainv)))
     }
     
-    WB_U <- Z[grp,] 
-    WB_Ut <- t(Z[grp,])
+    WB_U <- Z[grp,,drop=FALSE] 
+    WB_Ut <- t(Z[grp,,drop=FALSE])
     # Compute the inverse
     if (diagB) {
       WB_AUB <- mtx_AD(mtx_DA(WB_A,WB_U),WB_B)
