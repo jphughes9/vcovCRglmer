@@ -1,9 +1,39 @@
 library("sandwich")
-library("clubSandwich")
 library("lme4")
-library(MASS)
-library(expm)
+library("MASS")
+library("expm")
 vcovCR.glmerMod = function(obj, cluster, type="classic"){
+
+######################
+# Helper functions (from clubSandwich)
+######################
+  get_outer_group <- function(obj) {
+    group_n <- lme4::getME(obj, "l_i")
+    group_facs <- lme4::getME(obj, "flist")
+    group_facs[[which.min(group_n)]]
+  }
+  check_nested <- function(inner_grp, outer_grp) {
+    n_outer <- tapply(outer_grp, inner_grp, function(x) length(unique(x)))
+    all(n_outer == 1)
+  }
+  is_nested_lmerMod <- function(obj, cluster = get_outer_group(obj)) {
+    group_facs <- lme4::getME(obj, "flist")
+    nested <- vapply(group_facs, check_nested, outer_grp=cluster, FUN.VALUE=TRUE)
+    all(nested)
+  }
+#################
+# other helper functions
+#################
+  mtx_DA <- function(D,A) {
+    matrix(rep(diag(D),ncol(A))*as.numeric(A), ncol=ncol(A))
+  }
+  mtx_AD <- function(A,D) {
+    matrix(rep(diag(D), each=nrow(A))*as.numeric(A), ncol=ncol(A))
+  }
+  
+##################
+# Function starts here
+##################
   # Check if obj is a fitted model from lmer or glmer
   if ("merMod" %in% class(obj)) {
     stop("The 'obj' should be an object fitted using lmer or glmer.")
@@ -15,9 +45,12 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     stop("If 'cluster' is manually input, it must be of class 'factor'.")
   }
   if (missing(cluster)) 
-    cluster <- clubSandwich:::get_outer_group(obj)
-  if (!clubSandwich:::is_nested_lmerMod(obj, cluster)) 
+    cluster <- get_outer_group(obj)
+  if (!is_nested_lmerMod(obj, cluster)) 
     stop("Non-nested random effects detected. Method is not available for such models.")
+######################
+# decode options
+#######################
   ropt = substr(type,1,2)
   if (ropt=="FG") {    
     type1="FG"
@@ -67,46 +100,37 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     stop("The 'type' must be one of the following: 'classic', 'DF', 'KC', 'MD', 'FG', 'MBN'.")
   }
 #################
-# helper functions
-#################
-  mtx_DA <- function(D,A) {
-    matrix(rep(diag(D),ncol(A))*as.numeric(A), ncol=ncol(A))
-  }
-  mtx_AD <- function(A,D) {
-    matrix(rep(diag(D), each=nrow(A))*as.numeric(A), ncol=ncol(A))
-  }
-#################
 # extract information from obj
 #################
-  n = nobs(obj)
+  n = stats::nobs(obj)
   clusternames = unique(cluster)
   m = length(clusternames)
 #
-  X = model.matrix(obj,type="fixed")
-  beta=matrix(fixef(obj),ncol=1)
+  X = stats::model.matrix(obj,type="fixed")
+  beta=matrix(lme4::fixef(obj),ncol=1)
   np=dim(beta)[1]
 #
-  Z = model.matrix(obj,type="random")
+  Z = stats::model.matrix(obj,type="random")
   nq=dim(Z)[2]
 #
   Y = obj@resp$y
 # The following allows processing of binomial data
-  if (isLMM(obj)) nden=rep(1,length(Y)) else nden = obj@resp$n
+  if (lme4::isLMM(obj)) nden=rep(1,length(Y)) else nden = obj@resp$n
 #
-  eta = predict(obj,type="link")
-  ginv_eta = predict(obj,type="response")
+  eta = stats::predict(obj,type="link")
+  ginv_eta = stats::predict(obj,type="response")
 #
-  link = family(obj)$link
+  link = stats::family(obj)$link
 #
-  sigma2 = sigma(obj)^2
-  lambda = getME(obj,"Lambda")
+  sigma2 = stats::sigma(obj)^2
+  lambda = lme4::getME(obj,"Lambda")
   R = as.matrix(lambda%*%t(lambda)*sigma2)
   WB_B <- R
-  if (isDiagonal(WB_B)) diagB=TRUE else diagB=FALSE
+  if (Matrix::isDiagonal(WB_B)) diagB=TRUE else diagB=FALSE
 ##################
 # Robust variance calculation
 ##################
-  XtVX = vcov(obj)
+  XtVX = stats::vcov(obj)
   WB_C1 = solve(XtVX)
   sum=matrix(0,np,np)
 # start loop over clusters
@@ -132,7 +156,7 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     e = matrix(P - X[grp,]%*%beta,ncol=1)
     ete = e[,,drop=FALSE]%*%t(e[,,drop=FALSE])
     #
-    Sigma = diag(sigma2*family(obj)$variance(ginv_eta[grp])/nden[grp])
+    Sigma = diag(sigma2*stats::family(obj)$variance(ginv_eta[grp])/nden[grp])
     
     # this is diagonal, which is the first term of WB
 
@@ -159,8 +183,8 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
 # Since WB_A is identity, the following expressions are simplified from general Woodbury
       O = WB_C1 + WB_V%*%WB_U
 #      WB_A = diag(ng)
-#      FF = WB_A - WB_U%*%ginv(matrix(as.numeric(O),dim(O)))%*%WB_V
-      FF = -(WB_U%*%ginv(matrix(as.numeric(O),dim(O)))%*%WB_V) 
+#      FF = WB_A - WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V
+      FF = -(WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V) 
       diag(FF) = diag(FF) + 1
       FVX = FF%*%Vinv%*%X[grp,]
       sum = sum + t(FVX)%*%ete%*%FVX
@@ -168,7 +192,7 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     if (type1=="KC") {
       if (exact) {
         H = X[grp,]%*%XtVX%*%t(X[grp,])%*%Vinv  
-        FF = ginv(sqrtm(diag(ng) - t(H)))
+        FF = MASS::ginv(expm::sqrtm(diag(ng) - t(H)))
         if (is.complex(FF)) stop("(I-H_g)^(-1/2) is complex")
         FVX = FF%*%Vinv%*%X[grp,]
         sum = sum + t(FVX)%*%ete%*%FVX
@@ -178,8 +202,8 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
         # Since WB_A is identity, the following expressions are simplified from general Woodbury
         O = WB_C1 + WB_V%*%WB_U
 #        WB_A = diag(ng)
-#        FF = WB_A - WB_U%*%ginv(matrix(as.numeric(O),dim(O)))%*%WB_V
-        FF = -(WB_U%*%ginv(matrix(as.numeric(O),dim(O)))%*%WB_V) 
+#        FF = WB_A - WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V
+        FF = -(WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V) 
         diag(FF) = diag(FF) + 1
         VX = Vinv%*%X[grp,]
         FVX = FF%*%VX
