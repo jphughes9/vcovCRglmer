@@ -37,12 +37,34 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
       exact = TRUE
     }
   } else {
+    if (ropt=="MB") {
+      type1="MBN"
+  # defaults
+      DF = TRUE
+      d = 2
+      r = 1
+      text = substr(type,regexpr("\\(",type)[[1]]+1,regexpr("\\)",type)[[1]]-1)
+      if (text!=""){
+       mbnargs = lapply(strsplit(text,","),strsplit,"=")
+       numargs = length(mbnargs[[1]])
+       for (i in 1:numargs){
+         if (!(mbnargs[[1]][[i]][1] %in% c("DF","d","r"))) {
+           stop("Allowable arguments for MBN are 'DF','d','r'")
+         }
+         if (mbnargs[[1]][[i]][1]=="DF") {
+           assign(mbnargs[[1]][[i]][1],as.logical(mbnargs[[1]][[i]][2]))
+         } else {
+           assign(mbnargs[[1]][[i]][1],as.numeric(mbnargs[[1]][[i]][2]))
+         }
+       }
+      }
+  } else { 
     type1 = type
-  }}
+  }}}
   # Check if type is one of the specific allowed values
-  allowed_types <- c("classic", "DF", "KC", "MD", "FG")
+  allowed_types <- c("classic", "DF", "KC", "MD", "FG", "MBN")
   if (!(type1 %in% allowed_types)) {
-    stop("The 'type' must be one of the following: 'classic', 'DF', 'KC', 'MD', 'FG'.")
+    stop("The 'type' must be one of the following: 'classic', 'DF', 'KC', 'MD', 'FG', 'MBN'.")
   }
 #################
 # helper functions
@@ -87,6 +109,7 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
   XtVX = vcov(obj)
   WB_C1 = solve(XtVX)
   sum=matrix(0,np,np)
+# start loop over clusters
   for (g in clusternames){
     grp = (cluster == g & nden>0)
     ng = sum(grp)
@@ -171,16 +194,29 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
 #      XAA = X[grp,]%*%diag(1/sqrt(1-pmin(r,diag(Q))))
       sum = sum + t(XAA)%*%Vinv%*%ete%*%Vinv%*%XAA
     } else {
+# classic and MBN
       VX = Vinv%*%X[grp,]
       sum = sum + t(VX)%*%ete%*%VX 
     }}}
-#
   }
+# end loop over clusters
   c = 1
+  deltam = 0
+  phi = 0
   if (type1=="DF") {
-    if (m-np>0) c= m/(m-np) else cat("DF not valid because m-p <= 0; defaulting to classic")
+    if (m-np>0) c = m/(m-np) else cat("DF not valid because m-p <= 0; defaulting to classic")
   }
-  robustVar = c*XtVX%*%sum%*%XtVX
+  if (type1=="MBN") {
+    f = sum(nden)
+    if (DF) {c = (f-1)/(f-np) * (m/(m-1))}
+    if (m > (d+1)*np) {deltam = np/(m-np)} else {deltam = 1/d}
+    omega = XtVX %*% sum
+    evals = eigen(omega,symmetric=TRUE,only.values=TRUE)
+    if (m > np) {pstar = np} else {pstar = sum(evals$values>0)}
+    phi =  max(r,sum(evals$values)/pstar)
+  }
+#  
+  robustVar = c*XtVX%*%sum%*%XtVX + deltam*phi*XtVX
   robustVar
 }
 
