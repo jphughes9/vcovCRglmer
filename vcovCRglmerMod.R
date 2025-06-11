@@ -1,4 +1,5 @@
 library("sandwich")
+library("clubSandwich")
 library("lme4")
 library("MASS")
 library("expm")
@@ -178,34 +179,34 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     Vinv <- WB_A - WB_AUB%*%solve(diag(nq) + WB_Ut%*%WB_AUB)%*%WB_UtA
 #    
     if (type1=="MD") {
-      WB_U = -t(Vinv)%*%X[grp,]
-      WB_V = t(X[grp,])
+      WB_U = -t(Vinv)%*%X[grp,,drop=FALSE]
+      WB_V = t(X[grp,,drop=FALSE])
 # Since WB_A is identity, the following expressions are simplified from general Woodbury
       O = WB_C1 + WB_V%*%WB_U
 #      WB_A = diag(ng)
 #      FF = WB_A - WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V
       FF = -(WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V) 
       diag(FF) = diag(FF) + 1
-      FVX = FF%*%Vinv%*%X[grp,]
+      FVX = FF%*%Vinv%*%X[grp,,drop=FALSE]
       sum = sum + t(FVX)%*%ete%*%FVX
     } else {
     if (type1=="KC") {
       if (exact) {
-        H = X[grp,]%*%XtVX%*%t(X[grp,])%*%Vinv  
+        H = X[grp,,drop=FALSE]%*%XtVX%*%t(X[grp,,drop=FALSE])%*%Vinv  
         FF = MASS::ginv(expm::sqrtm(diag(ng) - t(H)))
         if (is.complex(FF)) stop("(I-H_g)^(-1/2) is complex")
-        FVX = FF%*%Vinv%*%X[grp,]
+        FVX = FF%*%Vinv%*%X[grp,,drop=FALSE]
         sum = sum + t(FVX)%*%ete%*%FVX
       } else {
-        WB_U = -t(Vinv)%*%X[grp,]
-        WB_V = t(X[grp,])
+        WB_U = -t(Vinv)%*%X[grp,,drop=FALSE]
+        WB_V = t(X[grp,,drop=FALSE])
         # Since WB_A is identity, the following expressions are simplified from general Woodbury
         O = WB_C1 + WB_V%*%WB_U
 #        WB_A = diag(ng)
 #        FF = WB_A - WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V
         FF = -(WB_U%*%MASS::ginv(matrix(as.numeric(O),dim(O)))%*%WB_V) 
         diag(FF) = diag(FF) + 1
-        VX = Vinv%*%X[grp,]
+        VX = Vinv%*%X[grp,,drop=FALSE]
         FVX = FF%*%VX
         term = t(FVX)%*%ete%*%VX
 #        sum = sum + (t(FVX)%*%ete%*%VX + t(VX)%*%ete%*%FVX)/2
@@ -213,13 +214,13 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
       }
     } else {
       if (type1=="FG") {
-      Q = t(X[grp,])%*%Vinv%*%X[grp,]%*%XtVX
+      Q = t(X[grp,,drop=FALSE])%*%Vinv%*%X[grp,,drop=FALSE]%*%XtVX
       XAA = mtx_AD(X[grp,],diag(1/sqrt(1-pmin(r,diag(Q)))))
 #      XAA = X[grp,]%*%diag(1/sqrt(1-pmin(r,diag(Q))))
       sum = sum + t(XAA)%*%Vinv%*%ete%*%Vinv%*%XAA
     } else {
 # classic and MBN
-      VX = Vinv%*%X[grp,]
+      VX = Vinv%*%X[grp,,drop=FALSE]
       sum = sum + t(VX)%*%ete%*%VX 
     }}}
   }

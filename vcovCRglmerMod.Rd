@@ -92,7 +92,7 @@ sandwich variance estimation for GEE analyses of cluster randomized trials. Stat
 
 Mancl LA and DeRouen TA (2001) A Covariance Estimator for GEE with Improved Small-Sample Properties. Biometrics 57:126–134
 
-Morel, J. G., Bokossa, M. C., and Neerchal, N. K. (2003). Small Sample Correction for the Variance of GEE Estimators. Biometrical Journal 4:395–409.
+Morel, J. G., Bokossa, M. C., and Neerchal, N. K. (2003). Small Sample Correction for the Variance of GEE Estimators. Biometrical Journal 45:395–409.
 
 SAS GLIMMIX documentation (https://documentation.sas.com/doc/en/statug/15.2/statug_glimmix_syntax01.htm)
 }
