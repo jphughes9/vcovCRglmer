@@ -157,14 +157,14 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     e = matrix(P - X[grp,]%*%beta,ncol=1)
     ete = e[,,drop=FALSE]%*%t(e[,,drop=FALSE])
     #
-    Sigma = diag(sigma2*stats::family(obj)$variance(ginv_eta[grp])/nden[grp])
+    Sigma = diag(sigma2*stats::family(obj)$variance(ginv_eta[grp])/nden[grp],ng,ng)
     
     # this is diagonal, which is the first term of WB
 
     if (link=="identity") {
-      WB_A <- diag(1/diag(Sigma))
+      WB_A <- diag(1/diag(Sigma),ng,ng)
     } else {
-      WB_A <- diag(1/diag(mtx_AD(mtx_DA(deltainv,Sigma),deltainv)))
+      WB_A <- diag(1/diag(mtx_AD(mtx_DA(deltainv,Sigma),deltainv)),ng,ng)
     }
     
     WB_U <- Z[grp,,drop=FALSE] 
@@ -215,7 +215,7 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     } else {
       if (type1=="FG") {
       Q = t(X[grp,,drop=FALSE])%*%Vinv%*%X[grp,,drop=FALSE]%*%XtVX
-      XAA = mtx_AD(X[grp,],diag(1/sqrt(1-pmin(r,diag(Q)))))
+      XAA = mtx_AD(X[grp,],diag(1/sqrt(1-pmin(r,diag(Q))),np,np))
 #      XAA = X[grp,]%*%diag(1/sqrt(1-pmin(r,diag(Q))))
       sum = sum + t(XAA)%*%Vinv%*%ete%*%Vinv%*%XAA
     } else {
