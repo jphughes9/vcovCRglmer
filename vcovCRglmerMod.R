@@ -4,7 +4,7 @@ library("lme4")
 library("MASS")
 library("expm")
 vcovCR.glmerMod = function(obj, cluster, type="classic"){
-
+  eps=1e-14
 ######################
 # Helper functions (from clubSandwich)
 ######################
@@ -237,7 +237,7 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     if (m > (d+1)*np) {deltam = np/(m-np)} else {deltam = 1/d}
     omega = XtVX %*% sum
     evals = Re(eigen(omega,only.values=TRUE)$values)
-    if (m > np) {pstar = np} else {pstar = sum(evals>0)}
+    if (m > np) {pstar = np} else {pstar = sum(evals>eps)}
     phi =  max(r,sum(evals)/pstar)
   }
 #  
