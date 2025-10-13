@@ -236,9 +236,9 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
     if (DF) {c = (f-1)/(f-np) * (m/(m-1))}
     if (m > (d+1)*np) {deltam = np/(m-np)} else {deltam = 1/d}
     omega = XtVX %*% sum
-    evals = eigen(omega,symmetric=TRUE,only.values=TRUE)
-    if (m > np) {pstar = np} else {pstar = sum(evals$values>0)}
-    phi =  max(r,sum(evals$values)/pstar)
+    evals = Re(eigen(omega,only.values=TRUE)$values)
+    if (m > np) {pstar = np} else {pstar = sum(evals>0)}
+    phi =  max(r,sum(evals)/pstar)
   }
 #  
   robustVar = c*XtVX%*%sum%*%XtVX + deltam*phi*XtVX
