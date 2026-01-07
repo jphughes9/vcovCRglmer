@@ -19,7 +19,7 @@ Fitted glmer model for which to calculate the variance-covariance matrix
 Optional expression or vector indicating which observations belong to the same cluster. If not specified, will be set to clubSandwich:::get_outer_group(obj)
 }
 \item{type}{
-Character string specifying which small-sample adjustment should be used, with available options "classic", "DF", "KC", "MD", "FG(\eqn{r_{fg}})", or "MBN(DF,d,\eqn{r_{mbn}})" where \eqn{0 \leq r_{fg} <1}, DF is \code{TRUE} (default) or \code{FALSE}, \eqn{d \geq 1}, and \eqn{0 \leq r_{mbn} \leq 1}. See "Details" section for further information. Default is "classic".
+Character string specifying which small-sample adjustment should be used, with available options "classic", "DF", "KC", "MD", "FG(\eqn{r_{fg}})", or "MBN(DF,d,\eqn{r_{mbn}})". See "Details" section for further information. Default is "classic".
 }
 }
 
@@ -51,9 +51,9 @@ Mancl and DeRouen (2001) \tab 1 \tab I \tab \eqn{(I - H_g^{\prime})^{-1}} \cr
 Fay and Graubard (2001) \tab 1 \tab \eqn{\scriptsize{\mbox{diag} \left\{( 1 - \min(r_{fg}, [Q_g]_{jj}))^{-1/2} \right\}}} \tab I \cr
 }
 
-Table 1b. Values of c, \eqn{\delta_m = 0} and \eqn{\phi = 0} for MBN robust variance (A = I and F = I).
+Table 1b. Values of c, \eqn{\delta_m} and \eqn{\phi} for MBN robust variance (A = I and F = I).
 \tabular{lccc}{ 
-\tab c \tab \eqn{\delta_m} \tab \eqn{\phi} \cr 
+\tab c \tab \eqn{\delta_m^3} \tab \eqn{\phi} \cr 
 Morel, Bokossa and Neerchal (2003) 
 \tab \eqn{\begin{array}{cl}
              \frac{m(n-1)}{(m-1)(n-p)} & \scriptsize{\mbox{DF = T}} \\
@@ -74,7 +74,8 @@ Notes: \cr
 \eqn{d \geq 1} (default 2.0) \cr
 
 \eqn{^1} {When type = "KC" is selected then the approximation given by Li et al (2020) is used in place of this expression.}\cr
-\eqn{^2} {If type = "DF" is selected but \eqn{m-p \le 0} then a warning is issued and type defaults to "classic".}
+\eqn{^2} {If type = "DF" is selected but \eqn{m-p \le 0} then a warning is issued and type defaults to "classic".}\cr
+\eqn{^3} {If MBN is called with a capital d (i.e. MBN(DF,D,\eqn{r_{mbn}})) then \eqn{\delta_m = 1/D} always}
 }
 
 \value{

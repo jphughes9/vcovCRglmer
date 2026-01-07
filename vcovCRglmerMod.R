@@ -77,13 +77,14 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
       DF = TRUE
       d = 2
       r = 1
+      D = NA
       text = substr(type,regexpr("\\(",type)[[1]]+1,regexpr("\\)",type)[[1]]-1)
       if (text!=""){
        mbnargs = lapply(strsplit(text,","),strsplit,"=")
        numargs = length(mbnargs[[1]])
        for (i in 1:numargs){
-         if (!(mbnargs[[1]][[i]][1] %in% c("DF","d","r"))) {
-           stop("Allowable arguments for MBN are 'DF','d','r'")
+         if (!(mbnargs[[1]][[i]][1] %in% c("DF","d","D","r"))) {
+           stop("Allowable arguments for MBN are 'DF','d','D','r'")
          }
          if (mbnargs[[1]][[i]][1]=="DF") {
            assign(mbnargs[[1]][[i]][1],as.logical(mbnargs[[1]][[i]][2]))
@@ -234,7 +235,13 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
   if (type1=="MBN") {
     f = sum(nden)
     if (DF) {c = (f-1)/(f-np) * (m/(m-1))}
-    if (m > (d+1)*np) {deltam = np/(m-np)} else {deltam = 1/d}
+    if (is.na(D)) {
+# standard option for d as described in MBN
+      if (m > (d+1)*np) {deltam = np/(m-np)} else {deltam = 1/d}
+    } else {
+# force d to a particular value regardless of m
+      deltam = 1/D
+    }
     omega = XtVX %*% sum
     evals = Re(eigen(omega,only.values=TRUE)$values)
     if (m > np) {pstar = np} else {pstar = sum(evals>eps)}
