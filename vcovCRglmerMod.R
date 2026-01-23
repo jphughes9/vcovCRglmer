@@ -133,7 +133,7 @@ vcovCR.glmerMod = function(obj, cluster, type="classic"){
 # Robust variance calculation
 ##################
   XtVX = stats::vcov(obj)
-  WB_C1 = Matrix::solve(XtVX)
+  WB_C1 = MASS::ginv(as.matrix(XtVX))
   sum=matrix(0,np,np)
 # start loop over clusters
   for (g in clusternames){
